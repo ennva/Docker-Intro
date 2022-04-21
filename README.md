@@ -90,5 +90,70 @@
 * Each step in dockefile is cached
 * Dockerfile is not a shell script. Put the steps that you suppose to be change frequently at the end of you dockerfile
 
+### Docker under the hook (the program)
+* Program written in Go language
+* Docker manage kernel features of the physical computer
+	- It uses <b>"cgroups"</b> or "control group" to group processes together and give them the idea of being contained within their own little world
+	- Ises <b>"namespaces"</b> which allow it to split the networking stack so you have one set of addresses for one container, another set for another container
+	- It uses <b>"copy-on-write"</b> filesystems to build the idea of images
+	- Docker make scripting distributed systems "easy"
+* Docker is divided into 2 programs:
+	- the client and server
+	- these 2 programs communicate over a socket (either over a network or through a "file"[this is a case of docker installed in you local machine and server run inside the container])
+	- Runnind docker locally mean: (docker client program) -> socket("file" /var/run/docker.sock) -> (docker server program) and docker server create containers or delete them
+		- so you can run docker client inside the container `docker run -ti --rm -v /var/run/docker.sock:/var/run/docker.sock docker sh`. Here the docker client inside the container just control the docker server outside of that container
+
+### Docker under the hook (networking and namespaces)
+* Docker use bridges to create virtual networks in your computer. Bridges function like software switches. They control the Ethernet layer
+	- Try to run docker continer with full access to the host network `docker run --rm -ti --net=host centos7 bash`
+	- and then install `yum install -y bridge-utils` to check list of bridge `brctl show`. You will see the network "docker0" which is the virtual network
+* How docker send packet between containers-host or containers-on the internet: It use PORT forwarding
+	- try to rn a container with full privilege on host network (!No good idea on production) `docker run --rm -ti --net=host --privileged=true centos7 bash`
+	- then install `yum install -y iptables` to check the routing tables inside the container `iptables -n -L -t nat`
+	- then run a new container with a port maping in/out `docker run --rm -ti -p 8080:8080 centos7 bash`. You will be able see that maping in the list of iptables
+	
+### Docker Registries in detail (https://docs.docker.com/registry/)
+* registry is only a program
+* Popular Docker Registry Programs
+	- The official python Docker Registry
+	- Nexus
+* Running the Docker Registry in Docker
+	- Docker makes installing network services (reasonably) easy
+	- The registry is a Docker service
+	- command `docker run -d -p 5000:5000 --restart=always --name registry registry:2` (registry:2 is the image)
+* How you can save your images other than registry:
+	- On the Local storage that running the registry
+	- On the cloud: Amazon ECR
+	- On the cloud: Google Container registry (https://cloud.google.com/container-registry)
+	- on the clous: Azure container registry
+	- By saving `docker save` and loadind `docker load` with docker command. Ex: archive set of images `docker save -o my-archive.tar.gz centos7 ubuntu busybox` and to load as new `docker load -i my-archive.tar.gz`
+	
+### Docker Orchestration
+* use of Docker Compose for single machine coordination, designed for testing, brings up all your containers, volumes, networks, etc., with one command
+* For larger systems there:
+	- kubernetes (https://kubernetes.io/docs/setup/): Containers, Pods group containers together, service make pods available to others, label are used for very advanced service delivery. `kubect1` command is available
+	- Amazon EC2 Container Service (ECS): task definitions which define containers to run together, Tasks, Services, load balancers
+		- Avantages: 
+			- ELBs(load balancers)
+			- create your own host instances in AWS
+			- Make your instances start the agent and join the cluster
+			- Pass the docker control socket into the agent
+			- Provides docker repos - don't have to create your on repos
+			- containers (tasks) can be part of CloudFormation stacks
+	- AWS Fargate: More automated version of AWS ECS
+	- Docker Swarm: For people ho make docker
+	- Google kubernates Engine (GKE): Google hosted kubernetes version
+	- Amazon EKS: Kubernetes hosted version in AWS: 
+	- Azure Kubernetes Service (AKS)
+
+### Goals
+* Get one service to run in docker
+* learn more about Dockerfile
+* Run a production service on your Laptop
+* Make a personal development image
+
+			
+	
+
 	
 	
